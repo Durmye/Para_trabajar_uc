@@ -1,0 +1,15 @@
+#Ignorar enunciado
+Enunciado.pdf
+
+#Ignorar archivos entregados con la tarea
+dcciudad.pyc
+todos_tests.py
+
+#Ignorar archivos personales 
+Tests_personales.py
+
+#Ignorar carpteas 
+data/
+tests_publicos/
+tests_privados/
+__pycache__/
