@@ -1,0 +1,12 @@
+#Ignorar enunciado 
+Enunciado.pdf
+
+#Ignorar Log-md y Readme 
+Base.md
+log.md
+
+#Ignorar data por ahora 
+data/
+test_personales/
+__pycache__/
+
