@@ -14,6 +14,7 @@ class TestCargarDatos(unittest.TestCase):
 
     def shortDescription(self):
         doc = self._testMethodDoc
+        self.maxDiff = None
         return doc or None
 
     def test_s_animales(self):

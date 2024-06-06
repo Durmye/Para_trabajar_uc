@@ -1,0 +1,15 @@
+# ignorar incluidos en tarea 
+Enunciado.pdf
+log.md
+
+test_elementos_prohibidos.pyc
+todos_tests.py
+tests_solution.py
+utilidades.py
+
+# ignorar carpetas
+data/
+tests_publicos/
+
+# ignorar personales
+pruebas_random.py
