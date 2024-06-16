@@ -1,0 +1,3 @@
+Vicente, 10
+Isabel, 20
+Carola, 15
