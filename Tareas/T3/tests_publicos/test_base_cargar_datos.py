@@ -14,6 +14,7 @@ class TestCargarDatos(unittest.TestCase):
 
     def shortDescription(self):
         doc = self._testMethodDoc
+        self.maxDiff = None
         return doc or None
 
     def test_s_animales(self):
@@ -95,13 +96,13 @@ class TestCargarDatos(unittest.TestCase):
 
         distritos_esperados = [
             Distritos(id_distrito=1, nombre='Distrito 1', id_comuna=1,
-                      provincia=' Arica', region=' Arica y Parinacota'),
+                      provincia='Arica', region='Arica y Parinacota'),
             Distritos(id_distrito=22, nombre='Distrito 22', id_comuna=70,
-                      provincia=' San Felipe de Aconcagua', region=' Valparaíso'),
+                      provincia='San Felipe de Aconcagua', region='Valparaíso'),
             Distritos(id_distrito=93, nombre='Distrito 93', id_comuna=313,
-                      provincia=' Llanquihue', region=' Los Lagos'),
+                      provincia='Llanquihue', region='Los Lagos'),
             Distritos(id_distrito=104, nombre='Distrito 104', id_comuna=343,
-                      provincia=' Última Esperanza', region=' Magallanes y de la Antártica Chilena')
+                      provincia='Última Esperanza', region='Magallanes y de la Antártica Chilena')
         ]
 
         self.assertCountEqual(distritos_cargados, distritos_esperados)
@@ -148,7 +149,7 @@ class TestCargarDatos(unittest.TestCase):
 
         # Revisar largo
         generador = list(generador)
-        self.assertEqual(len(generador), 208)
+        self.assertEqual(len(generador), 190)
 
         # Revisar posiciones aleatorias
         ponderadores_cargados = [generador[0], generador[18],
