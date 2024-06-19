@@ -1,7 +1,8 @@
 from PyQt6.QtWidgets import QMainWindow, QLabel, QPushButton, QApplication, \
-      QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit
+      QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit, \
+      QGridLayout
 from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QPixmap, QGuiApplication
+from PyQt6.QtGui import QPixmap, QGuiApplication, QColor
 import funciones as aux
 import sys
 import os
@@ -99,14 +100,17 @@ class VentanaJuego(QWidget):
         super().__init__()
         self.setWindowTitle("Puzzle")
         #Agregar geometria de la ventana utilizando resolucion adapatable 
-
+        r_s = QGuiApplication.primaryScreen().geometry()
+        ancho = r_s.width()
+        largo = r_s.height()
+        self.setGeometry(r_s.x(), r_s.y(), ancho, largo)
         
         ##Elementos de la ventana
 
         #Botonoes 
-        #self.pausa = QPushButton("Pausa", self)
-        #self.verificar = QPushButton("Verificar", self)
-        #self.salir = QPushButton("Salir", self)
+        self.pausa = QPushButton("Pausa", self)
+        self.verificar = QPushButton("Verificar", self)
+        self.salir = QPushButton("Salir", self)
         
         #Entidades 
         #self.pepa
@@ -114,12 +118,67 @@ class VentanaJuego(QWidget):
         #self.poop
 
         #Puzzle 
-        #self.cuadrado
-        #self.Grilla
+        grilla = QGridLayout()
+        
+        puzzle = aux.leer_base("intermedio_3")
+        dimension = aux.dimension_grilla(puzzle)
+        columnas = aux.obtener_columnas(puzzle)
+        filas = aux.obtener_filas(puzzle)
+        max_hint_columna = aux.obtener_max_columna(columnas)
+        max_hint_fila = aux.obtener_max_fila(filas)
+
+        print(f"puzzle: {puzzle}")
+        print(f"dimension: {dimension}")
+        print(f"columnas: {columnas}")
+        print(f"filas: {filas}")
+        print(f"max_hint_columna: {max_hint_columna}")
+        print(f"max_hint_filas: {max_hint_fila}")
+
+        posiciones = [(i, j) for i in range(dimension + max_hint_columna)
+                      for j in range(dimension + max_hint_fila)]
+        
+        for i in range(len(posiciones)):
+            posicion = posiciones[i]
+            print(posicion[0], posicion[1])
+            # Revisa que no inicie informacion dentro de cuadrado superior izquierdo
+            if posicion[0] < max_hint_fila and posicion[1] < max_hint_columna: 
+                pass
+            # Revisa inicio de hints de columnas
+            elif posicion[1] >= max_hint_fila and posicion[0] < max_hint_columna: 
+                print("ALOOOOOOOOOOOOOOOooo")
+                # Revisa que no se exceda indice max de la lista 
+                if len(columnas[posicion[1] - max_hint_fila]) > posicion[0]: 
+                    hint = QLabel(columnas[posicion[1] - max_hint_fila][posicion[0]], self)
+                    grilla.addWidget(hint, *posicion)
+                    print("Alo columnas!")
+            # Revisa inicio de hints de filas 
+            elif posicion[1] < max_hint_fila and posicion[0] >= max_hint_columna:
+                #Revisa que no se exceda indice max de la lista 
+                if len(filas[posicion[0] - max_hint_columna]) > posicion[1]: 
+                    hint = QLabel(filas[posicion[0] - max_hint_columna][posicion[1]], self)
+                    grilla.addWidget(hint, *posicion)
+                    print("Alo filas")
+            # Revisa inicio del mapa.
+            elif posicion[0] >= max_hint_fila and posicion[1] >= max_hint_columna: 
+                casilla = QLabel()
+                casilla_pixmap = QPixmap("sprites/sandia.png")
+                casilla.setPixmap(casilla_pixmap)
+                grilla.addWidget(casilla, *posicion)
     
 
         #Distribucion de la ventana a nivel general 
-        #self.secciones 
+        secciones = QHBoxLayout()
+        secciones.addLayout(grilla)
+
+        hbox_inferior = QVBoxLayout()
+        hbox_inferior.addWidget(self.verificar)
+        hbox_inferior.addWidget(self.pausa)
+        hbox_inferior.addWidget(self.salir)
+
+        secciones.addLayout(hbox_inferior)
+        
+        self.setLayout(secciones)
+        self.show()
         
 
     '''
@@ -141,5 +200,6 @@ if __name__ == "__main__":
     sys.__excepthook__ = hook
 
     app = QApplication([])
-    ventana = VentanaPrincipal()
+    #ventana = VentanaPrincipal()
+    juego = VentanaJuego()
     sys.exit(app.exec())
