@@ -68,7 +68,6 @@ def obtener_filas(lista: list) -> list:
     # Lista[1] corresponde a la lista con las
     #   hints de las filas.
     filas = lista[1]
-    print(f"filas: {filas}")
     for i in range(len(lista[1])): 
         if len(lista[1][i]) > 1: 
             filas[i] = lista[1][i].split(",")
