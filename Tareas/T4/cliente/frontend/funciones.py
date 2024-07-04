@@ -17,7 +17,7 @@ def nombre_alphanum(nombre_usuario) -> bool:
 
 def leer_puntajes() -> list: 
     puntajes = []
-    ruta = os.path.join("puntaje.txt")
+    ruta = os.path.join("frontend/puntaje.txt")
     with open(ruta, "r") as ptjs_file: 
         ptjs_list = ptjs_file.readlines()
         for ptj in ptjs_list: 
@@ -36,7 +36,7 @@ def ordenar_puntajes(lista_puntajes) -> list:
 ### Funciones construccion grilla 
 
 def leer_base(nombre_archivo: str) -> list:
-    ruta = os.path.join("base_puzzles", nombre_archivo+".txt")
+    ruta = os.path.join("frontend", "base_puzzles", nombre_archivo+".txt")
     with open(ruta) as base: 
         info = base.readlines()
         puzzle = []

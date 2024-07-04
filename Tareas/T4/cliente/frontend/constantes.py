@@ -6,16 +6,15 @@ LISTA_PUZZLES = ["experto_1", "experto_2", "experto_3", "experto_4",
 ## Variables de tiempo en segundos
 
 # Variables de juego 
-TIEMPO_JUEGO = int
-TIEMPO_ADICIONAL = int
+TIEMPO_JUEGO = 100
+TIEMPO_ADICIONAL = 5
 
 # Variable popo 
-TIEMPO_TRANSICION = int 
+TIEMPO_TRANSICION = 2
 
 # Variables Sandia 
-TIEMPO_APARICION = int
-TIEMPO_ADICIONAL = int
-TIEMPO_DURACION = 100
+TIEMPO_APARICION = 4
+TIEMPO_DURACION = 2
 
 # Cheatcodes 
 PUNTAJE_INF = int

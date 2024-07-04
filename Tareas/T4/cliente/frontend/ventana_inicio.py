@@ -1,15 +1,17 @@
 from PyQt6.QtWidgets import QMainWindow, QLabel, QPushButton, QApplication, \
       QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QComboBox, QLineEdit
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtMultimedia import QSoundEffect
+from PyQt6.QtCore import pyqtSignal, Qt, QUrl
 from PyQt6.QtGui import QKeyEvent, QMouseEvent, QPixmap, QGuiApplication, QColor
-import funciones as aux
+from frontend.ventana_juego import VentanaJuego
+import frontend.funciones as aux
+import frontend.constantes as c
+from os.path import join
 import sys
-import os
-import constantes as c
 import time
 
 class VentanaPrincipal(QWidget):
-    senal_abrir_juego = pyqtSignal()
+    senal_abrir_juego = pyqtSignal(str, str)
     senal_cerrar_juego = pyqtSignal()
     
     def __init__(self) -> None:
@@ -27,7 +29,7 @@ class VentanaPrincipal(QWidget):
 
         # Logo. Listo
         self.logo = QLabel()
-        ruta_logo = os.path.join("sprites", "logo.png")
+        ruta_logo = join("frontend","sprites", "logo.png")
         logo_pixmap = QPixmap(ruta_logo)
         self.logo.setPixmap(logo_pixmap)
         self.logo.setScaledContents(True)
@@ -96,22 +98,22 @@ class VentanaPrincipal(QWidget):
         vbox_superior.addLayout(hbox_inferior1)
         self.setLayout(vbox_superior)
 
+        # Musica
+        self.media_player = QSoundEffect(self)
+        path_musica = QUrl.fromLocalFile(join("frontend", "sonidos", "musica_2.wav"))
+        self.media_player.setSource(path_musica)
+        self.media_player.play()
+
     def salir(self): 
         self.senal_cerrar_juego.emit()
+        self.media_player.stop()
 
     def jugar(self): 
         # Emite señal de iniciar juego con los parametros: 
         #   1.- Nombre de usuario ingresado.
         #   2.- Mapa seleccionado.
-        self.senal_abrir_juego.emit(self.editable_usuario.text, self.desplegable_puzzles.currentData())
-
-if __name__ == "__main__":
-    def hook(type_, value, traceback): 
-        print(type_)
-        print(traceback)
-    sys.__excepthook__ = hook
-
-    app = QApplication([])
-    ventana = VentanaPrincipal()
-    ventana.show()
-    sys.exit(app.exec())
+        nombre_archivo = self.desplegable_puzzles.currentText()
+        nombre_usuario = self.editable_usuario.text()
+        self.media_player.stop()
+        self.senal_abrir_juego.emit(nombre_usuario, 
+                                    nombre_archivo)

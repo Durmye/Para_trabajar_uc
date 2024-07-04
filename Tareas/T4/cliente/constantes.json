@@ -1,0 +1,12 @@
+{
+    "host": "localhost",
+    "TIEMPO_JUEGO": "int",
+    "TIEMPO_ADICIONAL": "int",
+
+    "TIEMPO_TRANSICION": "int", 
+
+    "TIEMPO_APARICION": "int",
+    "IEMPO_DURACION": "int",
+
+    "PUNTAJE_INF": "int"
+}

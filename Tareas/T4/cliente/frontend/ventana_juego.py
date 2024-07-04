@@ -1,104 +1,41 @@
 from PyQt6.QtWidgets import QLabel, QPushButton, QApplication, QWidget
-from PyQt6.QtCore import QObject, pyqtSignal, Qt, QThread
-from PyQt6.QtGui import QKeyEvent, QMouseEvent, QPixmap, QGuiApplication, QColor
-import funciones as aux
+from PyQt6.QtCore import QObject, pyqtSignal, Qt, QThread, QTimer, QMutex, QUrl
+from PyQt6.QtGui import QKeyEvent, QMouseEvent, QPixmap, QGuiApplication
+from PyQt6.QtMultimedia import QSoundEffect
+from frontend.threads import ThreadMovimiento, ThreadInteraccion, ThreadSandia
+import frontend.funciones as aux
+import frontend.constantes as c
+from os.path import join
+from random import randint
 import sys
-import os
-import constantes as c
-import time
 
-class ThreadMovimiento(QThread):
+class Sandia(QLabel):
+    
+    senal_click_sandia = pyqtSignal()
 
-    def __init__(self, direccion: str, pepa: QLabel, intervalo_x: int, intervalo_y: int, senal_thread) -> None:
+    def __init__(self) -> QLabel:
         super().__init__()
-        self.direccion = direccion
-        self.pepa = pepa
-        self.intervalo_x = intervalo_x
-        self.intervalo_y = intervalo_y 
-        self.senal_thread = senal_thread
-
-        if self.intervalo_x % 4 != 0: 
-            self.resto_x = self.intervalo_x % 4
-        else: 
-            self.resto_x = 0
-        
-        if self.intervalo_y % 4 != 0: 
-            self.resto_y = self.intervalo_y % 4
-        else: 
-            self.resto_y = 0
-
-    def run(self) -> None: 
-
-        if self.direccion == "w": 
-            sprite_0 = QPixmap("sprites/pepa/up_0.png")
-            sprite_1 = QPixmap("sprites/pepa/up_1.png")
-            sprite_2 = QPixmap("sprites/pepa/up_2.png")
-            sprite_3 = QPixmap("sprites/pepa/up_3.png")
-            mov_x = 0
-            mov_y = - int(self.intervalo_y/4)
-            resto_x = 0
-            resto_y = - self.resto_y 
-
-        elif self.direccion == "s": 
-            sprite_0 = QPixmap("sprites/pepa/down_0.png")
-            sprite_1 = QPixmap("sprites/pepa/down_1.png")
-            sprite_2 = QPixmap("sprites/pepa/down_2.png")
-            sprite_3 = QPixmap("sprites/pepa/down_3.png")
-            mov_x = 0
-            mov_y = int(self.intervalo_y/4)
-            resto_x = 0
-            resto_y = self.resto_y 
-
-        elif self.direccion == "a": 
-            sprite_0 = QPixmap("sprites/pepa/left_0.png")
-            sprite_1 = QPixmap("sprites/pepa/left_1.png")
-            sprite_2 = QPixmap("sprites/pepa/left_2.png")
-            sprite_3 = QPixmap("sprites/pepa/left_3.png")
-            mov_x = - int(self.intervalo_x/4)
-            mov_y = 0
-            resto_x = - self.resto_x
-            resto_y = 0
-
-        elif self.direccion == "d": 
-            sprite_0 = QPixmap("sprites/pepa/right_0.png")
-            sprite_1 = QPixmap("sprites/pepa/right_1.png")
-            sprite_2 = QPixmap("sprites/pepa/right_2.png")
-            sprite_3 = QPixmap("sprites/pepa/right_3.png")
-            mov_x = int(self.intervalo_x/4)
-            mov_y = 0
-            resto_x = self.resto_x
-            resto_y = 0
-
-        self.pepa.move(self.pepa.x() + mov_x, self.pepa.y() + mov_y)
-        self.pepa.setPixmap(sprite_1)
-        time.sleep(0.15)
-
-        self.pepa.move(self.pepa.x() + mov_x, self.pepa.y() + mov_y)
-        self.pepa.setPixmap(sprite_2)
-        time.sleep(0.15)
-
-        self.pepa.move(self.pepa.x() + mov_x, self.pepa.y() + mov_y)
-        self.pepa.setPixmap(sprite_3)
-        time.sleep(0.15)
-        
-        self.pepa.move(self.pepa.x() + mov_x + resto_x, self.pepa.y() + mov_y + resto_y)
-        self.pepa.setPixmap(sprite_0)      
-
-        self.senal_thread.emit(self.direccion)
+    
+    def mousePressEvent(self, event: QMouseEvent | None) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.senal_click_sandia.emit(self.id)
 
 class VentanaJuego(QWidget): 
 
     senal_cerrar_ventana = pyqtSignal()
     senal_verificar = pyqtSignal()
-    senal_movimiento_pepa = pyqtSignal(str)
+    senal_movimiento_pepa = pyqtSignal(int, int)
+    senal_interaccion_casilla = pyqtSignal(int, int)
 
-    def __init__(self) -> None: 
+    def __init__(self, nombre_puzzle) -> None: 
         
         #Atribuos de la clase
         super().__init__()
         self.pausa = False
+        self.tiempo_terminado = False
         self.posicion_pepa = [0, 0]
         self.thread_movimiento = None
+        self.thread_interaccion = None
 
         #Agregar geometria de la ventana utilizando resolucion adapatable 
         r_s = QGuiApplication.primaryScreen().geometry()
@@ -110,8 +47,7 @@ class VentanaJuego(QWidget):
         self.setWindowTitle("Puzzle")
 
         #Puzzle 
-        
-        puzzle = aux.leer_base("novato_1")
+        puzzle = aux.leer_base(nombre_puzzle)
 
         dimension = aux.dimension_grilla(puzzle)
         columnas = aux.obtener_columnas(puzzle)
@@ -141,7 +77,7 @@ class VentanaJuego(QWidget):
                       for j in range(dimension + max_hint_fila)]
         
         for posicion in posiciones:
-            print(posicion[0], posicion[1])
+            #print(posicion[0], posicion[1])
             # Revisa que no inicie informacion dentro de cuadrado superior izquierdo
             if posicion[1] < max_hint_fila and posicion[0] < max_hint_columna: 
                 pass
@@ -166,7 +102,7 @@ class VentanaJuego(QWidget):
                 casilla = QLabel(self)
                 casilla.setGeometry(posicion[1]*intervalo_x, posicion[0]*intervalo_y, intervalo_x, intervalo_y)
                 casilla.setAlignment(Qt.AlignmentFlag.AlignCenter)
-                casilla_pixmap = QPixmap("sprites/lechuga.png")
+                casilla_pixmap = QPixmap("frontend/sprites/lechuga.png")
                 casilla.setPixmap(casilla_pixmap)
                 self.casillas.append(casilla)
                 self.puzzle.append(casilla)
@@ -175,11 +111,14 @@ class VentanaJuego(QWidget):
         self.pepa = QLabel(self)
         self.pepa.setGeometry(max_hint_fila*intervalo_x, max_hint_columna*intervalo_y, intervalo_x, intervalo_y)
         self.pepa.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pepa_pixmap = QPixmap("sprites/pepa/down_0.png")
+        pepa_pixmap = QPixmap("frontend/sprites/pepa/down_0.png")
         self.pepa.setPixmap(pepa_pixmap)
+
+        # Sandia
+        self.sandia = self.instanciar_sandia(self.dimension, self.casillas, self.intervalo_x, self.intervalo_y)
+        
         
         # Botones 
-
         largo_botones = int(largo/4)
 
         self.boton_verificar = QPushButton("Verificar", self)
@@ -195,12 +134,22 @@ class VentanaJuego(QWidget):
         self.boton_salir.clicked.connect(self.salir)
 
         # Tiempo restante
-        self.tiempo_restante = QLabel(f"{c.TIEMPO_DURACION}", self)
+        self.tiempo_restante = QLabel(f"{c.TIEMPO_JUEGO}", self)
         self.tiempo_restante.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tiempo_restante.setGeometry(ancho-100, 0, 100, largo_botones)
 
-        self.show()
+        self.timer_tiempo_restante = QTimer(self)
+        self.timer_tiempo_restante.timeout.connect(self.actualizar_tiempo)
+        self.timer_tiempo_restante.setInterval(1000)
+        self.timer_tiempo_restante.start()
+
+        # Musica 
+        self.media_player = QSoundEffect(self)
+        path_musica = QUrl.fromLocalFile(join("frontend", "sonidos", "musica_1.wav"))
+        self.media_player.setSource(path_musica)
+        self.media_player.play()
     
+    ## Funcion pepa. Movimiento e interactuar con mapa 
     def keyPressEvent(self, event:QKeyEvent) -> None: 
 
         #Instancia Thread
@@ -210,43 +159,78 @@ class VentanaJuego(QWidget):
                                                       pepa = self.pepa,
                                                       intervalo_x = self.intervalo_x,
                                                       intervalo_y = self.intervalo_y,
-                                                      senal_thread= self.senal_movimiento_pepa)
+                                                      )
 
             #Moverse hacia arriba, revisa que no salga del mapa
             if event.text() == "w" and self.posicion_pepa[1] != 0:
                 self.thread_movimiento.start()
                 self.posicion_pepa[1] = self.posicion_pepa[1] - 1
                 print(self.posicion_pepa)
+                self.senal_movimiento_pepa.emit(self.posicion_pepa[0], self.posicion_pepa[1])
 
             #Moverse hacia abajo, revisa que no salga del mapa
             elif event.text() == "s" and self.posicion_pepa[1] != self.dimension - 1: 
                 self.thread_movimiento.start()
                 self.posicion_pepa[1] = self.posicion_pepa[1] + 1
                 print(self.posicion_pepa)
+                self.senal_movimiento_pepa.emit(self.posicion_pepa[0], self.posicion_pepa[1])
 
             #Moverse hacia la izquierda, revisa que no salga del mapa
             elif event.text() == "a" and self.posicion_pepa[0] != 0:
                 self.thread_movimiento.start()
                 self.posicion_pepa[0] = self.posicion_pepa[0] - 1
                 print(self.posicion_pepa)
+                self.senal_movimiento_pepa.emit(self.posicion_pepa[0], self.posicion_pepa[1])
 
             #Moverse hacia la derecha, revisa que no salga del mapa 
             elif event.text() == "d" and self.posicion_pepa[0] != self.dimension - 1: 
                 self.thread_movimiento.start()
                 self.posicion_pepa[0] = self.posicion_pepa[0] + 1
                 print(self.posicion_pepa)
+                self.senal_movimiento_pepa.emit(self.posicion_pepa[0], self.posicion_pepa[1])
 
         #Interactuar con la casilla en la que se esta.
         elif event.text() == "g" and not self.pausa: 
-            pass
+            casilla = self.casillas[(self.posicion_pepa[1] * self.dimension) + self.posicion_pepa[0]]
+            if self.pepa.x() == casilla.x() and self.pepa.y() == casilla.y(): 
+                if self.thread_interaccion is None or not self.thread_movimiento.isRunning():
+                    self.thread_interaccion = ThreadInteraccion(casilla,
+                                                                self.senal_interaccion_casilla)
+                    self.thread_interaccion.start()
+                    self.senal_interaccion_casilla.emit(self.posicion_pepa[0], self.posicion_pepa[1])
 
+    ## Funcion sandia.
+    def instanciar_sandia(self, dimension: int, casillas: list, intervalo_x: int, intervalo_y: int) -> QLabel:
+        #Retorna una instancia de sandia en una posicion aleatoria
+        sandia_x = randint(0, dimension - 1) 
+        sandia_y = randint(0, dimension - 1)
 
-    def mousePressEvent(self, event:QMouseEvent):
-        pass
+        casilla_aparicion = casillas[(sandia_x * dimension) + sandia_y]
+        origen_x = casilla_aparicion.x()
+        origen_y = casilla_aparicion.y()
 
+        sandia = Sandia()
+        sandia.senal_click_sandia.connect(self.sandia_clickeada)
+        sandia.setGeometry(origen_x, origen_y, intervalo_x, intervalo_y)
+        sandia.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sandia_pixmap = QPixmap("sprites/sandia.png")
+        sandia.setPixmap(sandia_pixmap)
+        return sandia
 
+    def sandia_clickeada(self):
+        self.sandia.hide()
+        self.mover_sandia()
+        self.tiempo_restante.setText(f"{int(int(self.tiempo_restante.text()) + {c.TIEMPO_ADICIONAL})}")
+
+    def mover_sandia(self) -> None:
+        sandia_x = randint(0, self.dimension - 1) 
+        sandia_y = randint(0, self.dimension - 1)
+        self.sandia.move(sandia_x, sandia_y)
+
+    ## Funciones Botones
     def salir(self): 
-        sys.exit(app.exec())
+        self.media_player.stop()
+        self.senal_cerrar_ventana.emit()
         #self.senal_cerrar_ventana.emit()
 
     def pausar(self):
@@ -255,35 +239,22 @@ class VentanaJuego(QWidget):
             for elemento in self.puzzle: 
                 elemento.hide()
             self.pepa.hide()
+            self.timer_tiempo_restante.stop()
+            self.media_player.stop()
         else: 
             self.pausa = False
             for elemento in self.puzzle:
                 elemento.show()
             self.pepa.show()
+            self.timer_tiempo_restante.start()
+            self.media_player.play()
 
     def verificar(self): 
         self.senal_verificar.emit()
-    
+
+    ## Funcion timepo
+    def actualizar_tiempo(self): 
+        tiempo_actual = int(self.tiempo_restante.text()) - 1
+        self.tiempo_restante.setText(str(tiempo_actual))
 
 
-    '''
-    Pepa:
-        Movimiento de pepa dado por: WASD
-        Interaccion con casillas dado por: G
-        Interaccion con sandias dado por: click
-    CheatCodes: 
-        I + N + F = tiempo infinito, setea puntaje a PUNTAJE_INF
-        M + U + T + E = Desactiva el uso de todos los sonidos durante
-                        la partida acutal 
-    
-    '''
-
-if __name__ == "__main__":
-    def hook(type_, value, traceback): 
-        print(type_)
-        print(traceback)
-    sys.__excepthook__ = hook
-
-    app = QApplication([])
-    juego = VentanaJuego()
-    sys.exit(app.exec())
